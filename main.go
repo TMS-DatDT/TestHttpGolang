@@ -14,6 +14,11 @@ type createWalletRequest struct {
 	Phone string `json:"Phone"`
 }
 
+type topUpRequest struct {
+	From   string `json:"From"`
+	Amount int    `json:"Amount"`
+}
+
 func TestCreateWallet(name string, email string, phone string) error {
 	reqData := createWalletRequest{name, email, phone}
 	reqJson, _ := json.Marshal(reqData)
@@ -32,21 +37,33 @@ func TestCreateWallet(name string, email string, phone string) error {
 	return nil
 }
 
+func TestTopUp(address string, amount int) error {
+	reqData := topUpRequest{address, amount}
+	reqJson, _ := json.Marshal(reqData)
+	reqBody := bytes.NewBuffer(reqJson)
+	resp, err := http.Post("http://127.0.0.1:9090/top-up", "application/json", reqBody)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	sBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Println(string(sBody))
+	return nil
+}
+
 func main() {
-	//log.Printf("Start Main")
-	//reqData := createWalletRequest{"DatDT", "datdt@microtecweb.com", "0123456789"}
-	//reqJson, _ := json.Marshal(reqData)
-	//log.Printf(string(reqJson))
-
-	//resp, err := http.Get("https://jsonplaceholder.typicode.com/posts/1")
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//body, err := io.ReadAll(resp.Body)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//log.Printf(string(body))
-
 	log.Print("Start Main")
+	//err := TestCreateWallet("DatDT", "datdt@microtecweb.com", "0123456789")
+	//if err != nil {
+	//	log.Println(err)
+	//}
+
+	err := TestTopUp("0x482B90D5AAD8340A216b7463860891356986AD5e", 100)
+	if err != nil {
+		log.Println(err)
+	}
 }
