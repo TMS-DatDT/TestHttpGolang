@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
 )
 
 type createWalletRequest struct {
@@ -40,11 +39,13 @@ type getBalanceRequest struct {
 	WalletAddress string `json:"WalletAddress"`
 }
 
-type getTransactionByAccountRequest struct {
-	From   string `json:"From"`
-	To     string `json:"To"`
-	Type   int32  `json:"Type"`   // -1: all, 0: topup, 1: transfer, 2: withdraw
-	Status int32  `json:"Status"` // -1: all, 0: success, 1: failed
+type transactionHistoryRequest struct {
+	From     string `json:"From"`
+	To       string `json:"To"`
+	Type     int32  `json:"Type"`   // -1: all, 0: topup, 1: transfer, 2: withdraw
+	Status   int32  `json:"Status"` // -1: all, 0: success, 1: failed
+	FromDate string `json:"FromDate"`
+	ToDate   string `json:"ToDate"`
 }
 
 type getTransactionByHashRequest struct {
@@ -148,10 +149,8 @@ func TestTransferContract(from string, to string, amount float64) error {
 }
 
 func TestGetBalance(walletAddress string) error {
-	reqData := getBalanceRequest{walletAddress}
-	reqJson, _ := json.Marshal(reqData)
-	reqBody := bytes.NewBuffer(reqJson)
-	resp, err := http.Post("http://127.0.0.1:9090/balance", "application/json", reqBody)
+	link := "http://127.0.0.1:9090/balance?WalletAddress=" + walletAddress
+	resp, err := http.Get(link)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -183,11 +182,11 @@ func TestWithdrawContract(walletAddress string, Amount float64) error {
 	return nil
 }
 
-func TestTransactionByAccount(from string, to string, trxnType int32, trxnStatus int32) error {
-	reqData := getTransactionByAccountRequest{from, to, trxnType, trxnStatus}
+func TestTransactionHistory(from string, to string, trxnType int32, trxnStatus int32, fromDate string, toDate string) error {
+	reqData := transactionHistoryRequest{from, to, trxnType, trxnStatus, fromDate, toDate}
 	reqJson, _ := json.Marshal(reqData)
 	reqBody := bytes.NewBuffer(reqJson)
-	resp, err := http.Post("http://127.0.0.1:9090/transaction-by-account", "application/json", reqBody)
+	resp, err := http.Post("http://127.0.0.1:9090/transaction-history", "application/json", reqBody)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -202,10 +201,8 @@ func TestTransactionByAccount(from string, to string, trxnType int32, trxnStatus
 }
 
 func TestTransactionByHash(hash string) error {
-	reqData := getTransactionByHashRequest{hash}
-	reqJson, _ := json.Marshal(reqData)
-	reqBody := bytes.NewBuffer(reqJson)
-	resp, err := http.Post("http://127.0.0.1:9090/transaction-by-hash", "application/json", reqBody)
+	link := "http://127.0.0.1:9090/transaction-by-hash?Hash=" + hash
+	resp, err := http.Get(link)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -221,63 +218,42 @@ func TestTransactionByHash(hash string) error {
 
 func main() {
 	log.Print("Start Main")
-	//address1, err := TestCreateWallet("Dinh Van Vuong", "VuongDV@microtecweb.com", "0123456789")
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//
-	//address2, err := TestCreateWallet("Tran Van Huy", "HuyTV@microtecweb.com", "0123456789")
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//
-	////err = TestTopUpContract(address, 1)
-	////if err != nil {
-	////	log.Println(err)
-	////}
-	//
-	//err = TestTransferContract(address1, address2, 2)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-
-	//log.Print("Start Main")
-	//address, err := TestCreateWallet("Dinh Van Vuong", "VuongDV@microtecweb.com", "0123456789")
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = TestTopUpContract(address2, 100)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = TestTransferContract(address1, address2, 10)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//time.Sleep(3000 * time.Millisecond)
-	//err = TestGetBalance(address1)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = TestGetBalance(address2)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = TestTransactionByAccount(address1, "", -1, -1)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//err = TestTransactionByAccount(address2, "", -1, -1)
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	err := TestWithdrawContract("0x68917b6956201309DF637428302d7e5EBb1EDffd", 30)
+	// Test create wallet
+	address, err := TestCreateWallet("Doan Trong Dat", "datdt@microtecweb.com", "0398881726")
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 	}
-	time.Sleep(20000 * time.Millisecond)
-	err = TestGetBalance("0x8Af8364b963092F765DCaAC76813ea4619be43fD")
+	address1, err := TestCreateWallet("Dinh Van Vuong", "vuongdv@microtecweb.com", "123456789")
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
+	}
+	log.Println("Address: ", address)
+	//Test topup
+	//err = TestTopUpContract(address, 100)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//time.Sleep(1000 * time.Millisecond)
+	// Test transfer
+	//err = TestTransferContract(address, address1, 190)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	// Test withdraw
+	//err = TestWithdrawContract(address1, 10)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	// Test getbalance
+	//time.Sleep(5000 * time.Millisecond)
+	//err = TestGetBalance(address)
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//Test transaction history
+	_ = address1
+	err = TestTransactionHistory(address, "", -1, -1, "2022-06-28 11:45:35", "2022-06-28 11:50:39")
+	if err != nil {
+		log.Println(err)
 	}
 }
